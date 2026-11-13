@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Complaints | Gram Panchayat Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <header style="background: linear-gradient(135deg, #111827, #1e3a8a);">
+        <div class="logo-area">
+            <h1>Gram Panchayat Admin</h1>
+            <p>Manage & Resolve Complaints</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="admin-dashboard.html">Dashboard</a></li>
+                <li><a href="manage-complaints.html">Manage Complaints</a></li>
+                <li><a href="#" id="logout-btn" style="color: #fca5a5;">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Search & Filter Bar -->
+        <div class="card">
+            <h3 style="margin-bottom: 1rem; color: #111827;">Filter & Search Complaints</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <input type="text" id="search-input" placeholder="Search by ID (e.g. GP-2026) or Subject..." style="margin-bottom: 0;">
+                
+                <select id="filter-status" style="margin-bottom: 0;">
+                    <option value="">All Statuses</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Under Review">Under Review</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+
+                <select id="filter-category" style="margin-bottom: 0;">
+                    <option value="">All Categories</option>
+                    <option value="Drinking Water Problems">Drinking Water Problems</option>
+                    <option value="Road Damage and Maintenance">Road Damage and Maintenance</option>
+                    <option value="Streetlight Problems">Streetlight Problems</option>
+                    <option value="Drainage and Sewage Issues">Drainage and Sewage Issues</option>
+                    <option value="Garbage Collection">Garbage Collection</option>
+                    <option value="Sanitation and Cleanliness">Sanitation and Cleanliness</option>
+                    <option value="Public Infrastructure Problems">Public Infrastructure Problems</option>
+                    <option value="Electricity-Related Local Issues">Electricity-Related Local Issues</option>
+                    <option value="Other Village Issues">Other Village Issues</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Complaint Action / Update Panel (Hidden until a complaint is selected) -->
+        <div id="action-panel" class="card" style="display: none; border-left: 5px solid var(--secondary-green);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 id="panel-title" style="color: #111827;">Manage Complaint</h3>
+                <button type="button" id="close-panel-btn" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);">✕ Close</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="background: #f9fafb; padding: 1rem; border-radius: 6px;">
+                    <p style="margin-bottom: 0.4rem;"><strong>Citizen:</strong> <span id="p-citizen"></span></p>
+                    <p style="margin-bottom: 0.4rem;"><strong>Contact:</strong> <span id="p-contact"></span></p>
+                    <p style="margin-bottom: 0.4rem;"><strong>Village & Location:</strong> <span id="p-location"></span></p>
+                    <p style="margin-bottom: 0.4rem;"><strong>Category:</strong> <span id="p-category"></span></p>
+                    <p style="margin-top: 0.75rem;"><strong>Description:</strong></p>
+                    <p id="p-description" style="color: var(--text-dark); white-space: pre-line; margin-top: 0.25rem;"></p>
+                    
+                    <div id="p-image-box" style="margin-top: 1rem; display: none;">
+                        <p style="font-weight: 600; margin-bottom: 0.4rem;">Uploaded Evidence:</p>
+                        <a id="p-image-link" href="" target="_blank">
+                            <img id="p-image" src="" alt="Evidence" style="max-width: 100%; max-height: 220px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        </a>
+                    </div>
+                </div>
+
+                <form id="update-form">
+                    <label for="u-status">Update Status *</label>
+                    <select id="u-status" required>
+                        <option value="Submitted">Submitted</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+
+                    <label for="u-assigned">Assign Staff / Department</label>
+                    <input type="text" id="u-assigned" placeholder="e.g., Water Supply Engineer / Ward Member">
+
+                    <label for="u-remarks">Administrative Remarks / Resolution Details *</label>
+                    <textarea id="u-remarks" rows="4" required placeholder="Enter official update, inspection notes, or resolution summary..."></textarea>
+
+                    <button type="submit" class="btn-primary" id="save-update-btn" style="background-color: var(--secondary-green);">Save Status & Log History</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- All Complaints Table -->
+        <div class="card">
+            <h3 style="margin-bottom: 1rem; color: #111827;">All Gram Panchayat Complaints</h3>
+            <div id="loading-msg" style="color: var(--text-muted);">Loading complaints...</div>
+            <div class="table-responsive" id="table-container" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Complaint ID</th>
+                            <th>Citizen</th>
+                            <th>Category</th>
+                            <th>Subject</th>
+                            <th>Village</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="complaints-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        let allComplaints = [];
+        let selectedComplaint = null;
+        let adminProfile = null;
+
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'Submitted': return 'badge-submitted';
+                case 'Under Review': return 'badge-review';
+                case 'In Progress': return 'badge-progress';
+                case 'Resolved': return 'badge-resolved';
+                case 'Rejected': return 'badge-rejected';
+                default: return 'badge-submitted';
+            }
+        }
+
+        function renderTable(complaints) {
+            const tbody = document.getElementById('complaints-tbody');
+            tbody.innerHTML = '';
+
+            if (complaints.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No matching complaints found.</td></tr>';
+                return;
+            }
+
+            complaints.forEach(c => {
+                const citizenName = c.profiles ? c.profiles.full_name : 'Unknown';
+                const date = new Date(c.created_at).toLocaleDateString();
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${c.complaint_number}</strong></td>
+                    <td>${citizenName}</td>
+                    <td>${c.category}</td>
+                    <td>${c.subject}</td>
+                    <td>${c.village}</td>
+                    <td>${date}</td>
+                    <td><span class="badge ${getStatusBadgeClass(c.status)}">${c.status}</span></td>
+                    <td><button type="button" class="btn-sm" onclick="openActionPanel('${c.id}')">Update</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const categoryFilter = document.getElementById('filter-category').value;
+
+            const filtered = allComplaints.filter(c => {
+                const matchesSearch = c.complaint_number.toLowerCase().includes(searchTerm) || 
+                                      c.subject.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || c.status === statusFilter;
+                const matchesCategory = !categoryFilter || c.category === categoryFilter;
+                return matchesSearch && matchesStatus && matchesCategory;
+            });
+
+            renderTable(filtered);
+        }
+
+        window.openActionPanel = function(complaintId) {
+            selectedComplaint = allComplaints.find(c => c.id === complaintId);
+            if (!selectedComplaint) return;
+
+            document.getElementById('panel-title').textContent = `Manage: ${selectedComplaint.complaint_number} — ${selectedComplaint.subject}`;
+            document.getElementById('p-citizen').textContent = selectedComplaint.profiles ? selectedComplaint.profiles.full_name : 'Unknown';
+            document.getElementById('p-contact').textContent = selectedComplaint.profiles ? `${selectedComplaint.profiles.phone || 'N/A'} (${selectedComplaint.profiles.email})` : 'N/A';
+            document.getElementById('p-location').textContent = `${selectedComplaint.location}, ${selectedComplaint.village}`;
+            document.getElementById('p-category').textContent = selectedComplaint.category;
+            document.getElementById('p-description').textContent = selectedComplaint.description;
+
+            if (selectedComplaint.image_url) {
+                document.getElementById('p-image').src = selectedComplaint.image_url;
+                document.getElementById('p-image-link').href = selectedComplaint.image_url;
+                document.getElementById('p-image-box').style.display = 'block';
+            } else {
+                document.getElementById('p-image-box').style.display = 'none';
+            }
+
+            document.getElementById('u-status').value = selectedComplaint.status;
+            document.getElementById('u-assigned').value = selectedComplaint.assigned_to || '';
+            document.getElementById('u-remarks').value = '';
+
+            document.getElementById('action-panel').style.display = 'block';
+            document.getElementById('action-panel').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            adminProfile = await window.authModule.checkUserSession('admin');
+            if (!adminProfile) return;
+
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.authModule.logoutUser();
+            });
+
+            document.getElementById('close-panel-btn').addEventListener('click', () => {
+                document.getElementById('action-panel').style.display = 'none';
+                selectedComplaint = null;
+            });
+
+            document.getElementById('search-input').addEventListener('input', applyFilters);
+            document.getElementById('filter-status').addEventListener('change', applyFilters);
+            document.getElementById('filter-category').addEventListener('change', applyFilters);
+
+            const res = await window.adminModule.getAllComplaints();
+            document.getElementById('loading-msg').style.display = 'none';
+
+            if (res.success) {
+                allComplaints = res.complaints;
+                renderTable(allComplaints);
+                document.getElementById('table-container').style.display = 'block';
+
+                // Check if ?id= was passed in URL from dashboard
+                const params = new URLSearchParams(window.location.search);
+                const preselectId = params.get('id');
+                if (preselectId) {
+                    openActionPanel(preselectId);
+                }
+            }
+        });
+
+        document.getElementById('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedComplaint) return;
+
+            const btn = document.getElementById('save-update-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving Update...';
+
+            const newStatus = document.getElementById('u-status').value;
+            const assignedTo = document.getElementById('u-assigned').value;
+            const remarks = document.getElementById('u-remarks').value;
+
+            const result = await window.adminModule.updateComplaintStatus(
+                selectedComplaint.id,
+                selectedComplaint.status,
+                newStatus,
+                assignedTo,
+                remarks,
+                adminProfile.id
+            );
+
+            btn.disabled = false;
+            btn.textContent = 'Save Status & Log History';
+
+            if (result.success) {
+                alert('Complaint updated and logged to history successfully!');
+                window.location.reload();
+            } else {
+                alert('Error updating complaint: ' + result.error);
+            }
+        });
+    </script>
+</body>
+</html>

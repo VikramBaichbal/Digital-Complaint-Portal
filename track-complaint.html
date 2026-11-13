@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Complaint | Gram Panchayat</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <h1>Gram Panchayat Portal</h1>
+            <p>Track Grievance Status</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="citizen-dashboard.html">Dashboard</a></li>
+                <li><a href="submit-complaint.html">New Complaint</a></li>
+                <li><a href="#" id="logout-btn" style="color: #fca5a5;">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card" style="max-width: 700px; margin: 1.5rem auto;">
+            <h2 style="color: var(--primary-dark); margin-bottom: 1rem;">Track Your Complaint</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                Enter your unique Complaint Reference ID (e.g., <strong>GP-2026-4829</strong>) to view current status and official remarks.
+            </p>
+
+            <form id="track-form" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <input type="text" id="complaint-number" required placeholder="GP-2026-XXXX" style="flex: 1; margin-bottom: 0;">
+                <button type="submit" class="btn-primary" id="search-btn" style="width: auto;">Track Status</button>
+            </form>
+
+            <div id="error-message" style="color: var(--danger); margin-top: 1rem; display: none;"></div>
+        </div>
+
+        <!-- Result Card -->
+        <div id="result-card" class="card" style="max-width: 700px; margin: 1.5rem auto; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <h3 id="res-number" style="color: var(--primary-blue);"></h3>
+                    <p id="res-category" style="color: var(--text-muted); font-size: 0.9rem;"></p>
+                </div>
+                <span id="res-status" class="badge"></span>
+            </div>
+
+            <h4 id="res-subject" style="margin-bottom: 0.5rem;"></h4>
+            <p id="res-description" style="color: var(--text-dark); margin-bottom: 1rem;"></p>
+            <p style="font-size: 0.9rem; color: var(--text-muted);"><strong>Location:</strong> <span id="res-location"></span></p>
+            <p style="font-size: 0.9rem; color: var(--text-muted);"><strong>Assigned Staff:</strong> <span id="res-assigned"></span></p>
+
+            <div id="res-image-box" style="margin-top: 1rem; display: none;">
+                <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Attached Photo:</p>
+                <img id="res-image" src="" alt="Complaint Evidence" style="max-width: 100%; max-height: 300px; border-radius: 6px; border: 1px solid var(--border-color);">
+            </div>
+
+            <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--primary-dark); border-top: 1px solid var(--border-color); padding-top: 1rem;">Status & Action History</h4>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tracking.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profile = await window.authModule.checkUserSession();
+            if (!profile) return;
+
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.authModule.logoutUser();
+            });
+        });
+
+        document.getElementById('track-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('search-btn');
+            const errDiv = document.getElementById('error-message');
+            const resultCard = document.getElementById('result-card');
+
+            errDiv.style.display = 'none';
+            resultCard.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Searching...';
+
+            const number = document.getElementById('complaint-number').value;
+            const res = await window.trackingModule.getComplaintByNumber(number);
+
+            btn.disabled = false;
+            btn.textContent = 'Track Status';
+
+            if (!res.success) {
+                errDiv.textContent = res.error;
+                errDiv.style.display = 'block';
+                return;
+            }
+
+            const c = res.complaint;
+            document.getElementById('res-number').textContent = c.complaint_number;
+            document.getElementById('res-category').textContent = `${c.category} • Submitted on ${new Date(c.created_at).toLocaleDateString()}`;
+            document.getElementById('res-status').textContent = c.status;
+            document.getElementById('res-status').className = 'badge badge-submitted';
+            document.getElementById('res-subject').textContent = c.subject;
+            document.getElementById('res-description').textContent = c.description;
+            document.getElementById('res-location').textContent = `${c.location}, ${c.village}`;
+            document.getElementById('res-assigned').textContent = c.assigned_to || 'Pending Assignment';
+
+            if (c.image_url) {
+                document.getElementById('res-image').src = c.image_url;
+                document.getElementById('res-image-box').style.display = 'block';
+            } else {
+                document.getElementById('res-image-box').style.display = 'none';
+            }
+
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+
+            if (res.history.length === 0) {
+                historyList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Complaint received. Awaiting initial review by Panchayat officials.</p>';
+            } else {
+                res.history.forEach(item => {
+                    const date = new Date(item.created_at).toLocaleString();
+                    historyList.innerHTML += `
+                        <div style="border-left: 3px solid var(--primary-blue); padding-left: 1rem; margin-bottom: 1rem;">
+                            <p style="font-weight: 600; font-size: 0.95rem;">Status changed to: ${item.new_status}</p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">${date}</p>
+                            ${item.remarks ? `<p style="margin-top: 0.35rem; background: #f9fafb; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;"><strong>Remark:</strong> ${item.remarks}</p>` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            resultCard.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Complaint | Gram Panchayat</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <h1>Gram Panchayat Portal</h1>
+            <p>Register New Grievance</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="citizen-dashboard.html">Dashboard</a></li>
+                <li><a href="track-complaint.html">Track</a></li>
+                <li><a href="#" id="logout-btn" style="color: #fca5a5;">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card" style="max-width: 700px; margin: 1.5rem auto;">
+            <h2 style="color: var(--primary-dark); margin-bottom: 1.5rem;">Submit a New Complaint</h2>
+            
+            <div id="error-message" style="color: var(--danger); margin-bottom: 1rem; display: none; padding: 0.75rem; background: #fee2e2; border-radius: 4px;"></div>
+            
+            <!-- Success Card shown after submission -->
+            <div id="success-box" style="display: none; text-align: center; padding: 2rem; background: #dcfce7; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="color: #15803d; margin-bottom: 0.5rem;">Complaint Submitted Successfully!</h3>
+                <p style="color: #166534; margin-bottom: 1rem;">Please save your unique reference ID to track progress:</p>
+                <div id="generated-id" style="font-size: 1.8rem; font-weight: 700; color: var(--primary-dark); background: var(--white); padding: 0.75rem 1.5rem; border-radius: 6px; display: inline-block; border: 2px dashed #15803d; margin-bottom: 1.5rem;"></div>
+                <div>
+                    <a href="citizen-dashboard.html" class="btn-primary" style="text-decoration: none; display: inline-block; width: auto;">Return to Dashboard</a>
+                </div>
+            </div>
+
+            <form id="complaint-form">
+                <label for="category">Complaint Category *</label>
+                <select id="category" required>
+                    <option value="">-- Select a Category --</option>
+                    <option value="Drinking Water Problems">1. Drinking Water Problems</option>
+                    <option value="Road Damage and Maintenance">2. Road Damage and Maintenance</option>
+                    <option value="Streetlight Problems">3. Streetlight Problems</option>
+                    <option value="Drainage and Sewage Issues">4. Drainage and Sewage Issues</option>
+                    <option value="Garbage Collection">5. Garbage Collection</option>
+                    <option value="Sanitation and Cleanliness">6. Sanitation and Cleanliness</option>
+                    <option value="Public Infrastructure Problems">7. Public Infrastructure Problems</option>
+                    <option value="Electricity-Related Local Issues">8. Electricity-Related Local Issues</option>
+                    <option value="Other Village Issues">9. Other Village Issues</option>
+                </select>
+
+                <label for="subject">Complaint Subject *</label>
+                <input type="text" id="subject" required placeholder="Brief title of the problem (e.g., Broken water pipe near Main Temple)">
+
+                <label for="village">Village Name *</label>
+                <input type="text" id="village" required>
+
+                <label for="location">Exact Location / Landmark *</label>
+                <input type="text" id="location" required placeholder="Ward number, street name, or nearby landmark">
+
+                <label for="description">Detailed Description *</label>
+                <textarea id="description" rows="4" required placeholder="Describe the issue clearly, how long it has persisted, etc."></textarea>
+
+                <label for="photo">Upload Photograph (Optional - Max 5MB, JPG/PNG/WebP)</label>
+                <input type="file" id="photo" accept="image/jpeg, image/png, image/webp">
+
+                <button type="submit" class="btn-primary" id="submit-btn">Submit Complaint</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/complaints.js"></script>
+    <script>
+        let currentUserProfile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentUserProfile = await window.authModule.checkUserSession('citizen');
+            if (!currentUserProfile) return;
+
+            // Pre-fill user's village
+            document.getElementById('village').value = currentUserProfile.village;
+
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.authModule.logoutUser();
+            });
+        });
+
+        document.getElementById('complaint-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const errDiv = document.getElementById('error-message');
+            
+            errDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Submitting Complaint...';
+
+            const formData = {
+                category: document.getElementById('category').value,
+                subject: document.getElementById('subject').value,
+                village: document.getElementById('village').value,
+                location: document.getElementById('location').value,
+                description: document.getElementById('description').value
+            };
+
+            const imageFile = document.getElementById('photo').files[0] || null;
+
+            const result = await window.complaintsModule.submitComplaint(currentUserProfile.id, formData, imageFile);
+
+            if (result.success) {
+                document.getElementById('complaint-form').style.display = 'none';
+                document.getElementById('generated-id').textContent = result.complaint.complaint_number;
+                document.getElementById('success-box').style.display = 'block';
+            } else {
+                errDiv.textContent = result.error;
+                errDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Submit Complaint';
+            }
+        });
+    </script>
+</body>
+</html>

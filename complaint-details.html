@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Details | Gram Panchayat</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <h1>Gram Panchayat Portal</h1>
+            <p>Grievance Record</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="citizen-dashboard.html">Back to Dashboard</a></li>
+                <li><a href="#" id="logout-btn" style="color: #fca5a5;">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div id="loading" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading complaint details...</div>
+        
+        <div id="details-card" class="card" style="max-width: 800px; margin: 1.5rem auto; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 id="c-number" style="color: var(--primary-dark);"></h2>
+                    <p id="c-meta" style="color: var(--text-muted); font-size: 0.9rem;"></p>
+                </div>
+                <span id="c-status" class="badge badge-submitted" style="font-size: 0.95rem;"></span>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <h3 id="c-subject" style="margin-bottom: 0.75rem;"></h3>
+                <p id="c-description" style="white-space: pre-line; color: var(--text-dark);"></p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; background: #f9fafb; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+                <div><strong>Category:</strong> <span id="c-category"></span></div>
+                <div><strong>Village:</strong> <span id="c-village"></span></div>
+                <div><strong>Location:</strong> <span id="c-location"></span></div>
+                <div><strong>Assigned To:</strong> <span id="c-assigned"></span></div>
+            </div>
+
+            <div id="c-image-section" style="margin-bottom: 2rem; display: none;">
+                <h4 style="margin-bottom: 0.75rem;">Submitted Evidence</h4>
+                <img id="c-image" src="" alt="Complaint Evidence" style="max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid var(--border-color);">
+            </div>
+
+            <h3 style="border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-bottom: 1rem; color: var(--primary-dark);">Administrative Remarks & History</h3>
+            <div id="c-history"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tracking.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profile = await window.authModule.checkUserSession('citizen');
+            if (!profile) return;
+
+            document.getElementById('logout-btn').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.authModule.logoutUser();
+            });
+
+            const params = new URLSearchParams(window.location.search);
+            const complaintId = params.get('id');
+
+            if (!complaintId) {
+                window.location.href = 'citizen-dashboard.html';
+                return;
+            }
+
+            const res = await window.trackingModule.getComplaintById(complaintId);
+            document.getElementById('loading').style.display = 'none';
+
+            if (!res.success) {
+                alert('Could not load complaint details.');
+                window.location.href = 'citizen-dashboard.html';
+                return;
+            }
+
+            const c = res.complaint;
+            document.getElementById('c-number').textContent = c.complaint_number;
+            document.getElementById('c-meta').textContent = `Submitted on ${new Date(c.created_at).toLocaleString()}`;
+            document.getElementById('c-status').textContent = c.status;
+            document.getElementById('c-subject').textContent = c.subject;
+            document.getElementById('c-description').textContent = c.description;
+            document.getElementById('c-category').textContent = c.category;
+            document.getElementById('c-village').textContent = c.village;
+            document.getElementById('c-location').textContent = c.location;
+            document.getElementById('c-assigned').textContent = c.assigned_to || 'Unassigned';
+
+            if (c.image_url) {
+                document.getElementById('c-image').src = c.image_url;
+                document.getElementById('c-image-section').style.display = 'block';
+            }
+
+            const historyContainer = document.getElementById('c-history');
+            if (res.history.length === 0) {
+                historyContainer.innerHTML = '<p style="color: var(--text-muted);">No status updates recorded yet.</p>';
+            } else {
+                res.history.forEach(item => {
+                    historyContainer.innerHTML += `
+                        <div style="border-left: 3px solid var(--secondary-green); padding-left: 1rem; margin-bottom: 1rem;">
+                            <p style="font-weight: 600;">${item.previous_status ? `${item.previous_status} → ` : ''}${item.new_status}</p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">${new Date(item.created_at).toLocaleString()}</p>
+                            ${item.remarks ? `<p style="margin-top: 0.4rem; background: #f3f4f6; padding: 0.6rem; border-radius: 4px;">${item.remarks}</p>` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('details-card').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Login | Gram Panchayat</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header style="background: linear-gradient(135deg, #111827, #1e3a8a);">
+        <div class="logo-area">
+            <h1>Gram Panchayat Admin</h1>
+            <p>Authorized Official Portal</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Public Home</a></li>
+                <li><a href="login.html">Citizen Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card" style="max-width: 420px; margin: 3rem auto; border-top: 4px solid #1e3a8a;">
+            <h2 style="color: #111827; margin-bottom: 0.5rem; text-align: center;">Official Sign In</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-bottom: 1.5rem;">
+                Restricted to authorized Gram Panchayat administrators only.
+            </p>
+            
+            <div id="error-message" style="color: var(--danger); margin-bottom: 1rem; display: none; font-size: 0.9rem; text-align: center; background: #fee2e2; padding: 0.6rem; border-radius: 4px;"></div>
+
+            <form id="admin-login-form">
+                <label for="email">Official Email Address</label>
+                <input type="email" id="email" required placeholder="admin@panchayat.gov.in">
+
+                <label for="password">Password</label>
+                <input type="password" id="password" required placeholder="••••••••">
+
+                <div style="text-align: right; margin-top: 0.4rem; margin-bottom: 1rem;">
+                    <a href="#" id="forgot-password-link" style="font-size: 0.85rem; color: var(--primary-blue);">Forgot Password?</a>
+                </div>
+
+        <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
+
+                <button type="submit" class="btn-primary" id="login-btn" style="background-color: #1e3a8a;">Access Admin Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui-enhancements.js"></script>
+    <script>
+        document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const errDiv = document.getElementById('error-message');
+            
+            errDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Verifying credentials...';
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const result = await window.authModule.loginUser(email, password);
+
+            if (result.success) {
+                if (result.profile.role === 'admin') {
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    // Sign out immediately if a regular citizen tries to log in as admin
+                    await supabaseClient.auth.signOut();
+                    errDiv.textContent = 'Access Denied: This account does not have administrator privileges.';
+                    errDiv.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Access Admin Dashboard';
+                }
+            } else {
+                errDiv.textContent = result.error;
+                errDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Access Admin Dashboard';
+            }
+        });
+        
+        document.getElementById('forgot-password-link').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById('email').value.trim();
+            const email = emailInput || prompt('Enter your registered email address to receive a password reset link:');
+            if (!email) return;
+
+            const result = await window.authModule.sendPasswordReset(email);
+            if (result.success) {
+                alert('Password reset link sent! Please check your email inbox.');
+            } else {
+                alert('Error: ' + result.error);
+            }
+        });
+    </script>
+</body>
+</html>
