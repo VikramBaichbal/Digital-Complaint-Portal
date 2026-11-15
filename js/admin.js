@@ -54,7 +54,23 @@ async function updateComplaintStatus(complaintId, previousStatus, newStatus, ass
     }
 }
 
+async function deleteComplaint(recordId) {
+    try {
+        const { error } = await supabaseClient
+            .from('complaints')
+            .delete()
+            .eq('id', recordId);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (error) {
+        console.error('Admin Delete Complaint Error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
 window.adminModule = {
     getAllComplaints,
-    updateComplaintStatus
+    updateComplaintStatus,
+    deleteComplaint
 };
