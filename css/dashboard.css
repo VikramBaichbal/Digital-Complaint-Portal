@@ -87,3 +87,58 @@ tr:hover {
     background-color: var(--primary-blue);
     display: inline-block;
 }
+
+/* =========================================
+   DARK MODE TABLE & HEADING FIXES
+   ========================================= */
+
+/* Fix "Recent Incoming Complaints" & Card Headings in Dark Mode */
+body.dark-mode .dashboard-card h2,
+body.dark-mode .dashboard-card h3,
+body.dark-mode .section-header h2,
+body.dark-mode .section-header h3,
+[data-theme="dark"] .dashboard-card h2,
+[data-theme="dark"] .dashboard-card h3 {
+    color: #f1f5f9 !important;
+}
+
+/* Fix Table Header (thead) turning light in Dark Mode */
+body.dark-mode table thead,
+body.dark-mode table th,
+[data-theme="dark"] table thead,
+[data-theme="dark"] table th {
+    background-color: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid #334155 !important;
+}
+
+/* Fix Table Row Hover turning completely white in Dark Mode */
+body.dark-mode table tbody tr:hover,
+[data-theme="dark"] table tbody tr:hover {
+    background-color: #334155 !important; /* Subtle slate highlight instead of white */
+    color: #ffffff !important;
+}
+
+/* Ensure table cell text stays crisp on hover */
+body.dark-mode table tbody tr:hover td,
+[data-theme="dark"] table tbody tr:hover td {
+    color: #f8fafc !important;
+}
+
+/* Delete Button Styling */
+.btn-delete {
+    background-color: #dc2626;
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-delete:hover {
+    background-color: #b91c1c;
+}
