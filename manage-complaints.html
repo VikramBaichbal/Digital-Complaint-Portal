@@ -163,7 +163,10 @@
                     <td>${c.village}</td>
                     <td>${date}</td>
                     <td><span class="badge ${getStatusBadgeClass(c.status)}">${c.status}</span></td>
-                    <td><button type="button" class="btn-sm" onclick="openActionPanel('${c.id}')">Update</button></td>
+                    <td>
+                        <button type="button" class="btn-sm" onclick="openActionPanel('${c.id}')">Update</button>
+                        <button type="button" class="btn-sm btn-delete" onclick="handleDeleteComplaint('${c.id}', '${c.complaint_number}')">Delete</button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
@@ -211,6 +214,18 @@
             document.getElementById('action-panel').style.display = 'block';
             document.getElementById('action-panel').scrollIntoView({ behavior: 'smooth' });
         };
+
+        window.handleDeleteComplaint = async function(complaintId, displayId) {
+    if (!confirm(`Are you sure you want to permanently delete complaint ${displayId}? This cannot be undone.`)) return;
+
+    const result = await window.adminModule.deleteComplaint(complaintId);
+    if (result.success) {
+        alert('Complaint deleted successfully.');
+        window.location.reload();
+    } else {
+        alert('Error deleting complaint: ' + result.error);
+    }
+};
 
         document.addEventListener('DOMContentLoaded', async () => {
             adminProfile = await window.authModule.checkUserSession('admin');
